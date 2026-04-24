@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Raja Order Book",
+  title: "Order Book",
   description: "Professional Order Book Application",
   manifest: "/manifest.json",
   icons: {

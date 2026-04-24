@@ -210,7 +210,7 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
                 <span className="text-xl">👑</span>
               </motion.div>
               <div>
-                <h1 className="text-xl font-bold text-white tracking-tight">Raja Order Book</h1>
+                <h1 className="text-xl font-bold text-white tracking-tight">Order Book</h1>
                 <p className="text-white/50 text-[11px] font-medium">Professional Order Management</p>
               </div>
             </div>

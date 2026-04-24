@@ -57,7 +57,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            Raja Order Book
+            Order Book
           </motion.h1>
           <motion.p
             className="text-purple-300/60 text-sm mt-2"
@@ -143,7 +143,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
         >
-          Raja Foods © {new Date().getFullYear()}
+          Order Book © {new Date().getFullYear()}
         </motion.p>
       </motion.div>
     </div>

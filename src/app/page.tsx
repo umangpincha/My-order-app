@@ -59,7 +59,7 @@ export default function Home() {
             transition={{ delay: 0.5 }}
             className="text-3xl font-bold shimmer-text"
           >
-            Raja Foods
+            Order Book
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}

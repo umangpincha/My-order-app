@@ -30,8 +30,15 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 min-h-screen">
-        {children}
+      <body className="animated-bg min-h-screen text-white">
+        {/* Floating orbs */}
+        <div className="orb orb-1" />
+        <div className="orb orb-2" />
+        <div className="orb orb-3" />
+        <div className="orb orb-4" />
+        <div className="relative z-10">
+          {children}
+        </div>
       </body>
     </html>
   );

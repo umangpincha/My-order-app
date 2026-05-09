@@ -16,11 +16,11 @@ export default function Icon() {
           alignItems: "center",
           justifyContent: "center",
           borderRadius: 36,
-          background: "linear-gradient(135deg, #2563eb, #7c3aed)",
-          fontSize: 80,
+          background: "linear-gradient(135deg, #f59e0b, #ef4444)",
+          fontSize: 100,
         }}
       >
-        📋
+        👑
       </div>
     ),
     { ...size }

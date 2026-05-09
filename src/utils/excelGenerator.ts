@@ -45,6 +45,8 @@ export function generateExcel(order: Order) {
   if (order.notes) {
     data.push(["Notes:", order.notes]);
   }
+  data.push([]);
+  data.push(["Created with ❤️ by Umang Softwares Pvt Ltd"]);
 
   const ws = XLSX.utils.aoa_to_sheet(data);
   ws["!cols"] = [{ wch: 8 }, { wch: 25 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 14 }];

@@ -1,11 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 
 interface LoginPageProps {
   onLogin: (userId: string, password: string) => boolean;
 }
+
+const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789*#@!%";
+
+function ScrambleText({ text, className, delay = 0 }: { text: string; className?: string; delay?: number }) {
+  const [display, setDisplay] = useState(() => text.split("").map(() => CHARS[Math.floor(Math.random() * CHARS.length)]).join(""));
+  const done = useRef(false);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      let iteration = 0;
+      const original = text;
+      const interval = setInterval(() => {
+        setDisplay(
+          original.split("").map((letter, idx) => {
+            if (idx < iteration) return original[idx];
+            return CHARS[Math.floor(Math.random() * CHARS.length)];
+          }).join("")
+        );
+        if (iteration >= original.length) {
+          clearInterval(interval);
+          setDisplay(original);
+          done.current = true;
+        }
+        iteration += 0.4;
+      }, 35);
+      return () => clearInterval(interval);
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [text, delay]);
+
+  return <span className={className}>{display}</span>;
+}
+
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
   const [userId, setUserId] = useState("");
@@ -13,139 +46,323 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
+  const [isEntering, setIsEntering] = useState(false);
+  const [focused, setFocused] = useState<string | null>(null);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const rotateX = useTransform(mouseY, [-300, 300], [3, -3]);
+  const rotateY = useTransform(mouseX, [-300, 300], [-3, 3]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    mouseX.set(e.clientX - rect.left - rect.width / 2);
+    mouseY.set(e.clientY - rect.top - rect.height / 2);
+  }, [mouseX, mouseY]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!onLogin(userId, password)) {
-      setError("Invalid Login ID or Password");
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-    }
+    setIsEntering(true);
+    setTimeout(() => {
+      if (!onLogin(userId, password)) {
+        setError("ACCESS DENIED — INVALID CREDENTIALS");
+        setIsShaking(true);
+        setIsEntering(false);
+        setTimeout(() => setIsShaking(false), 600);
+      }
+    }, 600);
   };
 
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <motion.div
-        className="glass rounded-3xl p-8 w-full max-w-sm shadow-2xl neon-border"
-        initial={{ opacity: 0, y: 40, scale: 0.9 }}
-        animate={{
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          x: isShaking ? [0, -10, 10, -10, 10, 0] : 0,
-        }}
-        transition={{
-          duration: 0.5,
-          x: { duration: 0.4 },
-        }}
-      >
-        {/* Animated Logo */}
-        <div className="text-center mb-8">
+    <div className="min-h-screen flex overflow-hidden relative" style={{ cursor: "none" }}>
+
+      {/* ── NOISE TEXTURE LAYER ── */}
+      <div className="fixed inset-0 z-[1] pointer-events-none opacity-[0.03]"
+        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")", backgroundSize: "128px" }}
+      />
+
+      {/* ── LEFT PANEL ── */}
+      <div className="hidden lg:flex flex-col w-[55%] relative overflow-hidden border-r border-white/[0.08]">
+
+        {/* Giant BG letter */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
           <motion.div
-            className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-xl shadow-purple-500/25"
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            whileTap={{ scale: 0.95 }}
-            animate={{ boxShadow: ["0 10px 40px rgba(139,92,246,0.2)", "0 10px 40px rgba(139,92,246,0.5)", "0 10px 40px rgba(139,92,246,0.2)"] }}
-            transition={{ boxShadow: { duration: 2, repeat: Infinity } }}
+            className="font-black text-white leading-none"
+            style={{ fontSize: "38vw", opacity: 0.025, fontFamily: "'Bebas Neue', 'Arial Black', sans-serif", y: useTransform(mouseY, [-300, 300], [-20, 20]) }}
           >
-            <span className="text-4xl">👑</span>
+            R
           </motion.div>
-          <motion.h1
-            className="text-3xl font-bold shimmer-text"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            Order Book
-          </motion.h1>
+        </div>
+
+        {/* Top nav */}
+        <div className="relative z-10 flex items-center justify-between p-8">
+          <div className="flex items-center gap-2">
+            <motion.div
+              className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+            <span className="text-white/25 text-[9px] font-mono tracking-[0.4em] uppercase">System Active</span>
+          </div>
+          <span className="text-white/15 text-[9px] font-mono tracking-widest">v2.0.1</span>
+        </div>
+
+        {/* Hero title */}
+        <div className="relative z-10 flex-1 flex flex-col justify-center px-12">
           <motion.p
-            className="text-purple-300/60 text-sm mt-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            className="text-white/20 text-[9px] font-mono tracking-[0.5em] uppercase mb-6"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
             Professional Order Management
           </motion.p>
+
+          <div className="overflow-hidden mb-2">
+            <motion.h1
+              className="font-black text-white leading-none"
+              style={{ fontSize: "clamp(5rem, 9vw, 8rem)", fontFamily: "'Bebas Neue', 'Arial Black', sans-serif", lineHeight: 0.9 }}
+              initial={{ y: "110%" }}
+              animate={{ y: 0 }}
+              transition={{ duration: 1, delay: 0.2, ease: [0.76, 0, 0.24, 1] }}
+            >
+              <ScrambleText text="ORDER" delay={300} className="shimmer-text" />
+            </motion.h1>
+          </div>
+          <div className="overflow-hidden">
+            <motion.h1
+              className="font-black text-transparent leading-none"
+              style={{
+                fontSize: "clamp(5rem, 9vw, 8rem)",
+                fontFamily: "'Bebas Neue', 'Arial Black', sans-serif",
+                WebkitTextStroke: "1.5px rgba(255,255,255,0.18)",
+                lineHeight: 0.9
+              }}
+              initial={{ y: "110%" }}
+              animate={{ y: 0 }}
+              transition={{ duration: 1, delay: 0.35, ease: [0.76, 0, 0.24, 1] }}
+            >
+              <ScrambleText text="BOOK" delay={500} className="text-glow-blue" />
+            </motion.h1>
+          </div>
+
+          {/* Year + divider */}
+          <motion.div
+            className="flex items-center gap-4 mt-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+          >
+            <div className="h-px flex-1 bg-white/8" />
+            <span className="text-white/20 text-[9px] font-mono tracking-widest">2025</span>
+          </motion.div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <label className="block text-indigo-300/80 text-xs font-semibold mb-1.5 uppercase tracking-wider">Login ID</label>
-            <input
-              type="text"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/25 focus:outline-none focus:border-indigo-400/50 input-glow transition-all duration-300 text-sm"
-              placeholder="Enter Login ID"
-              required
-            />
-          </motion.div>
+        <div className="flex-1" />
+      </div>
 
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <label className="block text-indigo-300/80 text-xs font-semibold mb-1.5 uppercase tracking-wider">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/25 focus:outline-none focus:border-indigo-400/50 input-glow transition-all duration-300 text-sm"
-                placeholder="Enter Password"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
-              >
-                {showPassword ? "🙈" : "👁️"}
-              </button>
-            </div>
-          </motion.div>
+      {/* ── RIGHT PANEL — FORM ── */}
+      <div className="flex-1 flex flex-col relative bg-black/20 backdrop-blur-sm">
 
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                exit={{ opacity: 0, y: -10, height: 0 }}
-                className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-2.5 text-center"
-              >
-                ⚠️ {error}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <motion.button
-            type="submit"
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-bold text-base shadow-xl shadow-purple-500/20 btn-magic"
-            whileHover={{ scale: 1.02, boxShadow: "0 20px 40px rgba(139,92,246,0.3)" }}
-            whileTap={{ scale: 0.97 }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            🚀 Login
-          </motion.button>
-        </form>
-
-        <motion.p
-          className="text-center text-white/20 text-xs mt-6"
+        {/* Corner label */}
+        <motion.div
+          className="absolute top-8 right-8 text-white/15 text-[9px] font-mono tracking-[0.4em] uppercase"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
+          transition={{ delay: 1.2 }}
         >
-          Order Book © {new Date().getFullYear()}
-        </motion.p>
-      </motion.div>
+          Secure Login
+        </motion.div>
+
+        {/* Mobile title */}
+        <div className="lg:hidden px-8 pt-16 pb-0">
+          <div className="overflow-hidden">
+            <motion.h1
+              className="font-black text-white text-7xl leading-none"
+              style={{ fontFamily: "'Bebas Neue', 'Arial Black', sans-serif" }}
+              initial={{ y: "110%" }}
+              animate={{ y: 0 }}
+              transition={{ duration: 0.9, ease: [0.76, 0, 0.24, 1] }}
+            >
+              ORDER<br />
+              <span className="text-transparent" style={{ WebkitTextStroke: "1.5px rgba(255,255,255,0.2)" }}>BOOK</span>
+            </motion.h1>
+          </div>
+        </div>
+
+        {/* Centered form */}
+        <div className="flex-1 flex items-center justify-center px-8 lg:px-14">
+          <motion.div
+            ref={containerRef}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={() => { mouseX.set(0); mouseY.set(0); }}
+            className="w-full max-w-sm"
+            style={{ rotateX, rotateY, transformPerspective: 1200 }}
+          >
+
+            <motion.p
+              className="text-white/60 text-xs font-mono tracking-[0.3em] uppercase mb-10"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              Enter your credentials
+            </motion.p>
+
+            <form onSubmit={handleSubmit} className="space-y-8">
+
+              {/* Login ID Field */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.65, ease: [0.76, 0, 0.24, 1] }}
+              >
+                <label className="block text-[10px] font-mono tracking-[0.3em] uppercase mb-3"
+                  style={{ color: focused === "id" ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)" }}>
+                  Login ID
+                </label>
+                <div className="relative">
+                  <input
+                    type="text" value={userId}
+                    onChange={(e) => setUserId(e.target.value)}
+                    onFocus={() => setFocused("id")}
+                    onBlur={() => setFocused(null)}
+                    placeholder="—"
+                    required
+                    className="w-full bg-transparent pb-3 text-white text-sm font-mono tracking-[0.2em] placeholder-white/10 focus:outline-none border-none"
+                    style={{ cursor: "none" }}
+                  />
+                  {/* Animated underline */}
+                  <div className="absolute bottom-0 left-0 right-0 h-px bg-white/10" />
+                  <motion.div
+                    className="absolute bottom-0 left-0 h-px bg-white"
+                    animate={{ width: focused === "id" || userId ? "100%" : "0%" }}
+                    transition={{ duration: 0.5, ease: [0.76, 0, 0.24, 1] }}
+                  />
+                </div>
+              </motion.div>
+
+              {/* Password Field */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.75, ease: [0.76, 0, 0.24, 1] }}
+              >
+                <label className="block text-[10px] font-mono tracking-[0.3em] uppercase mb-3"
+                  style={{ color: focused === "pw" ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)" }}>
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"} value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setFocused("pw")}
+                    onBlur={() => setFocused(null)}
+                    placeholder="—"
+                    required
+                    className="w-full bg-transparent pb-3 text-white text-sm font-mono tracking-[0.2em] placeholder-white/10 focus:outline-none border-none pr-16"
+                    style={{ cursor: "none" }}
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 h-px bg-white/10" />
+                  <motion.div
+                    className="absolute bottom-0 left-0 h-px bg-white"
+                    animate={{ width: focused === "pw" || password ? "100%" : "0%" }}
+                    transition={{ duration: 0.5, ease: [0.76, 0, 0.24, 1] }}
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-0 bottom-2 text-[8px] font-mono tracking-[0.3em] uppercase text-white/20 hover:text-white/60 transition-colors"
+                    style={{ cursor: "none" }}>
+                    {showPassword ? "HIDE" : "SHOW"}
+                  </button>
+                </div>
+              </motion.div>
+
+              {/* Error */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2"
+                  >
+                    <motion.div
+                      className="w-1 h-1 rounded-full bg-red-500"
+                      animate={{ scale: [1, 1.5, 1] }}
+                      transition={{ duration: 0.5, repeat: 2 }}
+                    />
+                    <span className="text-red-400/80 text-[9px] font-mono tracking-[0.3em] uppercase">{error}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Submit Button */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.85 }}
+              >
+                <motion.button
+                  type="submit"
+                  className="w-full relative overflow-hidden group border border-white/15 hover:border-white/50 transition-all duration-500"
+                  animate={{ x: isShaking ? [-6, 6, -6, 6, 0] : 0 }}
+                  transition={{ duration: 0.35 }}
+                  style={{ cursor: "none" }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {/* Button fill on hover */}
+                  <motion.span
+                    className="absolute inset-0 bg-white"
+                    initial={{ y: "101%" }}
+                    whileHover={{ y: "0%" }}
+                    transition={{ duration: 0.4, ease: [0.76, 0, 0.24, 1] }}
+                  />
+
+                  {/* Default state */}
+                  <div className="relative z-10 group-hover:opacity-0 transition-opacity duration-200 py-4 px-6 flex items-center justify-between">
+                    <span className="text-white text-[9px] font-mono tracking-[0.5em] uppercase font-bold">
+                      {isEntering ? "Authenticating" : "Enter System"}
+                    </span>
+                    <motion.span
+                      className="text-white/40 text-xs"
+                      animate={isEntering ? { opacity: [1, 0, 1] } : {}}
+                      transition={{ duration: 0.8, repeat: Infinity }}
+                    >
+                      {isEntering ? "···" : "→"}
+                    </motion.span>
+                  </div>
+
+                  {/* Hover state */}
+                  <div className="absolute inset-0 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 py-4 px-6 flex items-center justify-between">
+                    <span className="text-black text-[9px] font-mono tracking-[0.5em] uppercase font-bold">Enter System</span>
+                    <span className="text-black/50 text-xs">→</span>
+                  </div>
+                </motion.button>
+              </motion.div>
+            </form>
+
+            {/* Footer */}
+            <motion.div
+              className="mt-16 pt-6 border-t border-white/[0.05] flex items-center justify-between"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.3 }}
+            >
+              <span className="text-white/30 text-[10px] font-mono tracking-[0.2em] uppercase">Umang Softwares Pvt Ltd</span>
+              <div className="flex items-center gap-1.5">
+                <motion.div className="w-1 h-1 rounded-full bg-emerald-400" animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 2, repeat: Infinity }} />
+                <span className="text-white/30 text-[10px] font-mono tracking-widest">© 2025</span>
+              </div>
+            </motion.div>
+
+          </motion.div>
+        </div>
+      </div>
     </div>
   );
 }

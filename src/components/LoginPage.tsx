@@ -93,7 +93,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
           <motion.div
             className="font-black text-white leading-none"
-            style={{ fontSize: "38vw", opacity: 0.025, fontFamily: "'Bebas Neue', 'Arial Black', sans-serif", y: useTransform(mouseY, [-300, 300], [-20, 20]) }}
+            style={{ fontSize: "38vw", opacity: 0.05, fontFamily: "'Arial Black', sans-serif", y: useTransform(mouseY, [-300, 300], [-20, 20]) }}
           >
             R
           </motion.div>
@@ -126,7 +126,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           <div className="overflow-hidden mb-2">
             <motion.h1
               className="font-black text-white leading-none"
-              style={{ fontSize: "clamp(5rem, 9vw, 8rem)", fontFamily: "'Bebas Neue', 'Arial Black', sans-serif", lineHeight: 0.9 }}
+              style={{ fontSize: "clamp(4rem, 8vw, 7rem)", fontFamily: "'Arial Black', sans-serif", lineHeight: 0.9 }}
               initial={{ y: "110%" }}
               animate={{ y: 0 }}
               transition={{ duration: 1, delay: 0.2, ease: [0.76, 0, 0.24, 1] }}
@@ -147,7 +147,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               animate={{ y: 0 }}
               transition={{ duration: 1, delay: 0.35, ease: [0.76, 0, 0.24, 1] }}
             >
-              <ScrambleText text="BOOK" delay={500} className="text-glow-blue" />
+              <ScrambleText text="BOOK" delay={500} className="text-white opacity-50" />
             </motion.h1>
           </div>
 
@@ -206,7 +206,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           >
 
             <motion.p
-              className="text-white/60 text-xs font-mono tracking-[0.3em] uppercase mb-10"
+              className="text-white text-sm font-display tracking-[0.2em] uppercase mb-10"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
@@ -309,38 +309,17 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               >
                 <motion.button
                   type="submit"
-                  className="w-full relative overflow-hidden group border border-white/15 hover:border-white/50 transition-all duration-500"
+                  className="w-full relative overflow-hidden group bg-white text-black py-4 rounded-xl font-display text-sm tracking-widest uppercase border-none"
                   animate={{ x: isShaking ? [-6, 6, -6, 6, 0] : 0 }}
                   transition={{ duration: 0.35 }}
                   style={{ cursor: "none" }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {/* Button fill on hover */}
-                  <motion.span
-                    className="absolute inset-0 bg-white"
-                    initial={{ y: "101%" }}
-                    whileHover={{ y: "0%" }}
-                    transition={{ duration: 0.4, ease: [0.76, 0, 0.24, 1] }}
-                  />
-
-                  {/* Default state */}
-                  <div className="relative z-10 group-hover:opacity-0 transition-opacity duration-200 py-4 px-6 flex items-center justify-between">
-                    <span className="text-white text-[9px] font-mono tracking-[0.5em] uppercase font-bold">
+                  <div className="relative z-10 flex items-center justify-between px-8">
+                    <span className="font-black">
                       {isEntering ? "Authenticating" : "Enter System"}
                     </span>
-                    <motion.span
-                      className="text-white/40 text-xs"
-                      animate={isEntering ? { opacity: [1, 0, 1] } : {}}
-                      transition={{ duration: 0.8, repeat: Infinity }}
-                    >
-                      {isEntering ? "···" : "→"}
-                    </motion.span>
-                  </div>
-
-                  {/* Hover state */}
-                  <div className="absolute inset-0 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 py-4 px-6 flex items-center justify-between">
-                    <span className="text-black text-[9px] font-mono tracking-[0.5em] uppercase font-bold">Enter System</span>
-                    <span className="text-black/50 text-xs">→</span>
+                    <span className="font-black">→</span>
                   </div>
                 </motion.button>
               </motion.div>

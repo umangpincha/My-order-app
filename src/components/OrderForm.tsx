@@ -12,12 +12,16 @@ interface OrderFormProps {
 }
 
 export default function OrderForm({ onLogout }: OrderFormProps) {
-  const [customerName, setCustomerName] = useState("");
-  const [address, setAddress] = useState("");
-  const [phone, setPhone] = useState("");
+  const [customerName, setCustomerName] = useState(() => (typeof window !== "undefined" ? localStorage.getItem("orderbook_cust_name") || "" : ""));
+  const [address, setAddress] = useState(() => (typeof window !== "undefined" ? localStorage.getItem("orderbook_cust_address") || "" : ""));
+  const [phone, setPhone] = useState(() => (typeof window !== "undefined" ? localStorage.getItem("orderbook_cust_phone") || "" : ""));
   const [notes, setNotes] = useState("");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [rates, setRates] = useState<Record<string, number>>({});
+  const [rates, setRates] = useState<Record<string, number>>(() => {
+    if (typeof window === "undefined") return {};
+    const saved = localStorage.getItem("orderbook_rates");
+    return saved ? JSON.parse(saved) : {};
+  });
   const [favourites, setFavourites] = useState<FavouriteOrder[]>([]);
   const [showFavourites, setShowFavourites] = useState(false);
   const [favName, setFavName] = useState("");
@@ -27,9 +31,15 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split("T")[0]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("orderbook_favourites");
-    if (saved) setFavourites(JSON.parse(saved));
+    const savedFavs = localStorage.getItem("orderbook_favourites");
+    if (savedFavs) setFavourites(JSON.parse(savedFavs));
   }, []);
+
+  // Save data whenever it changes
+  useEffect(() => { localStorage.setItem("orderbook_cust_name", customerName); }, [customerName]);
+  useEffect(() => { localStorage.setItem("orderbook_cust_address", address); }, [address]);
+  useEffect(() => { localStorage.setItem("orderbook_cust_phone", phone); }, [phone]);
+  useEffect(() => { localStorage.setItem("orderbook_rates", JSON.stringify(rates)); }, [rates]);
 
   const sortedCategories = useMemo(() => {
     return productCategories.map((cat) => ({
@@ -159,7 +169,7 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
 
       {/* ── HEADER ── */}
       <motion.header
-        className="sticky top-0 z-50 bg-white/5 backdrop-blur-2xl border-b border-white/10"
+        className="sticky top-0 z-50 glass-header"
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
@@ -174,14 +184,14 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
               👑
             </motion.div>
             <div>
-              <h1 className="font-display text-xl text-white leading-none tracking-wider">ORDER BOOK</h1>
+              <h1 className="font-display text-2xl text-white leading-none tracking-tight">ORDER BOOK</h1>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-white/25 text-[9px] font-mono-custom uppercase tracking-widest">Date:</span>
                 <input
                   type="date"
                   value={orderDate}
                   onChange={(e) => setOrderDate(e.target.value)}
-                  className="bg-transparent border-none text-[9px] text-white/50 font-mono-custom focus:outline-none focus:text-white transition-colors"
+                  className="bg-transparent border-none text-[11px] text-white font-bold focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -259,7 +269,7 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
             placeholder="Search products..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-6 pr-8 py-2.5 input-line text-sm text-white placeholder-white/15 tracking-wider"
+            className="w-full pl-8 pr-8 py-3 input-line text-base text-white placeholder-white/30 font-bold"
           />
           <AnimatePresence>
             {searchQuery && (
@@ -285,7 +295,7 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
         >
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1 h-4 bg-white/60" />
-            <h2 className="text-[9px] font-mono-custom text-white/40 uppercase tracking-[0.4em]">Customer Details</h2>
+            <h2 className="text-xs font-display text-white uppercase tracking-widest">Customer Details</h2>
           </div>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             <div className="col-span-2">
@@ -293,7 +303,7 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
               <input
                 type="text" placeholder="Customer name" value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full input-line text-sm text-white placeholder-white/15 py-1.5 tracking-wide"
+                className="w-full input-line text-base text-white placeholder-white/20 py-2.5 font-bold"
               />
             </div>
             <div>
@@ -416,7 +426,7 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${selectedCount > 0 ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" : "bg-white/20"}`} />
-                    <span className="font-mono-custom text-xs text-white/60 group-hover:text-white transition-colors tracking-widest uppercase">{cat.name}</span>
+                    <span className="font-display text-sm text-white transition-colors tracking-wide uppercase">{cat.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <AnimatePresence>
@@ -432,11 +442,11 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
                       )}
                     </AnimatePresence>
                     <motion.span
-                      className="text-white/25 text-xs font-mono-custom"
+                      className="text-white text-lg font-black"
                       animate={{ rotate: isOpen ? 180 : 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      ▾
+                      ▼
                     </motion.span>
                   </div>
                 </button>
@@ -455,7 +465,7 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
                         {/* Table header */}
                         <div className="grid grid-cols-[1fr_64px_64px] gap-2 pb-2 border-b border-white/5 mb-2">
                           {["ITEM", "QTY", "RATE"].map((h) => (
-                            <span key={h} className="text-[8px] font-mono-custom text-white/20 uppercase tracking-[0.3em]">{h}</span>
+                            <span key={h} className="text-[10px] font-display text-white/50 uppercase tracking-widest">{h}</span>
                           ))}
                         </div>
                         <div className="space-y-0.5">
@@ -466,7 +476,7 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
                             >
                               <div className="flex items-center gap-1.5 min-w-0">
                                 {product.popular && <span className="text-[9px]">🔥</span>}
-                                <span className={`text-xs truncate font-mono-custom ${quantities[product.id] ? "text-emerald-300" : "text-white/60"}`}>
+                                <span className={`text-sm truncate font-bold ${quantities[product.id] ? "text-white" : "text-white/80"}`}>
                                   {product.name}
                                 </span>
                               </div>
@@ -475,14 +485,14 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
                                 value={quantities[product.id] || ""}
                                 onChange={(e) => updateQuantity(product.id, parseFloat(e.target.value) || 0)}
                                 placeholder="0"
-                                className="w-full px-2 py-1 bg-white/5 border border-white/8 text-white text-center text-xs font-mono-custom focus:outline-none focus:border-white/30 transition-all rounded"
+                                className="w-full px-2 py-2 bg-[#2a2a2a] border border-white/20 text-white text-center text-sm font-bold focus:outline-none focus:border-white transition-all rounded"
                               />
                               <input
                                 type="number" min="0"
                                 value={rates[product.id] || ""}
                                 onChange={(e) => updateRate(product.id, parseFloat(e.target.value) || 0)}
                                 placeholder="₹"
-                                className="w-full px-2 py-1 bg-white/5 border border-white/8 text-white text-center text-xs font-mono-custom focus:outline-none focus:border-white/30 transition-all rounded"
+                                className="w-full px-2 py-2 bg-[#2a2a2a] border border-white/20 text-white text-center text-sm font-bold focus:outline-none focus:border-white transition-all rounded"
                               />
                             </div>
                           ))}
@@ -505,13 +515,13 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
         >
           <div className="flex items-center gap-2 mb-3">
             <div className="w-1 h-4 bg-white/60" />
-            <h2 className="text-[9px] font-mono-custom text-white/40 uppercase tracking-[0.4em]">Notes</h2>
+            <h2 className="text-xs font-display text-white uppercase tracking-widest">Notes</h2>
           </div>
           <textarea
             placeholder="Special instructions..."
             value={notes} onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            className="w-full bg-transparent border-b border-white/10 text-sm text-white placeholder-white/15 focus:outline-none focus:border-white/30 transition-all resize-none font-mono-custom py-1 leading-relaxed"
+            className="w-full bg-[#2a2a2a] border border-white/20 p-3 rounded-lg text-base text-white placeholder-white/30 focus:outline-none focus:border-white transition-all resize-none font-bold py-2 leading-relaxed"
           />
         </motion.section>
 
@@ -525,7 +535,7 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
 
       {/* ── FIXED BOTTOM ACTIONS ── */}
       <motion.div
-        className="fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-3xl border-t border-white/10 px-4 py-3 safe-area-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
+        className="fixed bottom-0 left-0 right-0 bg-[#121212] border-t-2 border-white/10 px-4 py-4 safe-area-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
@@ -539,7 +549,7 @@ export default function OrderForm({ onLogout }: OrderFormProps) {
             <motion.button
               key={btn.label}
               onClick={btn.onClick}
-              className="relative overflow-hidden group py-3 border border-white/10 text-[9px] font-mono-custom tracking-[0.3em] uppercase text-white/50 hover:text-white hover:border-white/40 transition-all duration-300"
+              className="relative overflow-hidden group py-4 bg-white text-black text-[11px] font-display tracking-widest uppercase border-none rounded-xl font-black"
               whileTap={{ scale: 0.97 }}
             >
               <span className="relative z-10">{btn.emoji} {btn.label}</span>
